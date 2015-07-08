@@ -1,7 +1,9 @@
-﻿using System.Net;
+﻿using ProxyServer;
+using System;
+using System.Net;
 using System.Net.Sockets;
 
-namespace HTTPTunnel
+namespace ProxyServer
 {
     public class ServerListener
     {
@@ -21,9 +23,11 @@ namespace HTTPTunnel
  
         public void AcceptConnection()
         {
+            Console.WriteLine("Accepting connections...");
             Socket newClient = this.listener.AcceptSocket();
-            ClientConnection client = new ClientConnection(newClient);
-            client.StartHandling();
+            ClientRegistrar.Instance.Register(newClient);           
+            //ClientConnection client = new ClientConnection(newClient);
+            //client.StartHandling();
         }
  
     }

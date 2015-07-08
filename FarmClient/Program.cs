@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Net.Sockets;
+using System.Net;
+using System.IO;
 
 namespace FarmClient
 {
@@ -11,8 +13,17 @@ namespace FarmClient
 
         static void Main(string[] args)
         {
+            StringBuilder sb = new StringBuilder();
+            foreach (string s in args)
+            {
+                sb.Append(s + "\n\r");
+            }
+            Console.WriteLine("Args: \n\r");
+            Console.WriteLine(sb.ToString());
+            string serverIP = args[0];
+
             byte[] requestBuffer = new byte[1];
-            byte[] responseBuffer = new byte[1];
+            byte[] responseBuffer = new byte[1024];
             bool recvRequest = true;
             string EOL = "\r\n";
 
@@ -21,15 +32,21 @@ namespace FarmClient
             List<string> requestLines = new List<string>();
 
             Socket proxSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            proxSocket.Connect("192.168.12.110", 9000);
+            proxSocket.Connect(serverIP, 9000);
 
             try
             {
 
-                proxSocket.Send(ASCIIEncoding.ASCII.GetBytes("FARM1\r\n\r\n"));
+                string str = String.Format("FARM1: {0}", System.Guid.NewGuid().ToString());
+                Console.WriteLine(str);
+                proxSocket.Send(ASCIIEncoding.ASCII.GetBytes(str));
+                
+
                 proxSocket.Receive(responseBuffer); //Get ACK
-                String resp = responseBuffer.ToString();
+                String resp = ASCIIEncoding.ASCII.GetString(responseBuffer);
+                Console.WriteLine("OK: From Server: {0}", resp);
                 Console.WriteLine("Begin Receiving Response...");
+
                 while (true)
                 {
 
@@ -51,11 +68,34 @@ namespace FarmClient
                             recvRequest = false;
                         }
                     }
-
                     Console.WriteLine(requestPayload);
+                    foreach (var s in requestLines)
+                    {
+                        Console.WriteLine(s);
+                    }
+                    Console.WriteLine(requestPayload);
+                    Uri myuri = new Uri("http://localhost/" + requestLines[0]);
+                    HttpWebRequest http = (HttpWebRequest)HttpWebRequest.Create(myuri);
+
+                    HttpWebResponse re = http.GetResponse() as HttpWebResponse;
+
+                    using (StreamReader sr = new StreamReader(re.GetResponseStream()))
+                    {
+                        string responseJson = sr.ReadToEnd();
+                        Console.WriteLine(responseJson);
+                        proxSocket.Send(ASCIIEncoding.ASCII.GetBytes(responseJson));
+                        // more stuff
+                    }
+                    Console.WriteLine(requestPayload);
+
+
+                    recvRequest = true;
                 }
             }
-            catch { }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
 
         }   
     }

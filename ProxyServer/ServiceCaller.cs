@@ -1,17 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Net.Sockets;
+using System.Linq;
 using System.Text;
+using System.Net.Sockets;
 using System.Threading;
 using System.Net;
 
 namespace ProxyServer
 {
-    class ClientConnection
+    class ServiceCaller
     {
         private Socket clientSocket;
 
-        public ClientConnection(Socket client)
+        public ServiceCaller(Socket client)
         {
             this.clientSocket = client;
         }
@@ -25,6 +26,7 @@ namespace ProxyServer
 
         private void Handler()
         {
+            // USE HTTP client instead of raw socket
             bool recvRequest = true;
             string EOL = "\r\n";
 
@@ -60,37 +62,6 @@ namespace ProxyServer
                 Console.WriteLine("Raw Request Received...");
                 Console.WriteLine(requestPayload);
 
-                this.clientSocket.Send(responseBuffer);
-
-
-                //State 1: Rebuilding Request Information and Create Connection to Destination Server
-                //string remoteHost = requestLines[0].Split(' ')[1].Replace("http://", "").Split('/')[0];
-                //string requestFile = requestLines[0].Replace("http://", "").Replace(remoteHost, "");
-                //requestLines[0] = requestFile;
-                //requestLines[5] = "Host: localhost";
-
-                requestPayload = "";
-                foreach (string line in requestLines)
-                {
-                    requestPayload += line;
-                    requestPayload += EOL;
-                }
-
-                destServerSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                destServerSocket.Connect("192.168.58.164", 80);
-                //IPHostEntry ipHostInfo = Dns.GetHostEntry("google.com");
-                //IPAddress ipAddress = ipHostInfo.AddressList[0];
-                //destServerSocket.Connect("192.168.12.110", 80);
-
-                //State 2: Sending New Request Information to Destination Server and Relay Response to Client
-                destServerSocket.Send(ASCIIEncoding.ASCII.GetBytes(requestPayload));
-
-                //Console.WriteLine("Begin Receiving Response...");
-                while (destServerSocket.Receive(responseBuffer) != 0)
-                {
-                    //Console.Write(ASCIIEncoding.ASCII.GetString(responseBuffer));
-                    this.clientSocket.Send(responseBuffer);
-                }
 
 
             }
